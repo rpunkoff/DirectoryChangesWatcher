@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/qtquickcontrols2.conf</file>
+        <file>qml/Theme/Theme.qml</file>
+        <file>qml/Theme/qmldir</file>
+        <file>qml/Controls/qmldir</file>
+        <file>qml/Controls/Base/AppPanel.qml</file>
+        <file>qml/Controls/Base/AppLabel.qml</file>
+        <file>qml/Controls/Base/AppButton.qml</file>
+        <file>qml/Controls/Base/AppRectangle.qml</file>
+        <file>qml/Controls/Base/AppTableView.qml</file>
+        <file>qml/Controls/Base/AppDelegate.qml</file>
+        <file>qml/Controls/Base/qmldir</file>
+        <file>qml/Controls/Impl/Header.qml</file>
+        <file>qml/Controls/Impl/Footer.qml</file>
+        <file>qml/Controls/Impl/Content.qml</file>
+        <file>qml/Controls/Impl/TableViewCellDelegate.qml</file>
+        <file>qml/Controls/Impl/TableViewEditableCellDelegate.qml</file>
+        <file>qml/Controls/Impl/TableViewDarkStyle.qml</file>
+        <file>qml/Controls/Impl/qmldir</file>
+    </qresource>
+</RCC>

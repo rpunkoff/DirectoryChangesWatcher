@@ -1,0 +1,7 @@
+module Base
+AppPanel 1.0 AppPanel.qml
+AppLabel 1.0 AppLabel.qml
+AppButton 1.0 AppButton.qml
+AppRectangle 1.0 AppRectangle.qml
+AppTableView 1.0 AppTableView.qml
+AppDelegate 1.0 AppDelegate.qml

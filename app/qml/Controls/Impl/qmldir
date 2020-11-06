@@ -1,0 +1,7 @@
+module Impl
+Header 1.0 Header.qml
+Footer 1.0 Footer.qml
+Content 1.0 Content.qml
+TableViewCellDelegate 1.0 TableViewCellDelegate.qml
+TableViewDarkStyle 1.0 TableViewDarkStyle.qml
+TableViewEditableCellDelegate 1.0 TableViewEditableCellDelegate.qml
