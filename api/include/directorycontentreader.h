@@ -14,16 +14,17 @@ class FileInfo;
 
 class DirectoryContentReader final {
 public:
-	/**
-	 * @brief Read Чтение всех файлов в директории
-	 * @param directory - путь к директории для чтения
-	 * @param relative - относительный путь
-	 * @return массив файлов и поддиректорий
-	 */
-    static vector<shared_ptr<FileInfo>> read(const string& directory,
-                                             const string& relative);
+    /**
+     * @brief Read - Reading all files in a directory with it's subdirectories
+     * @param directory - directory path
+     * @return Array of found files adn directories
+     */
+    static vector<shared_ptr<FileInfo>> read(const string& directory);
 
 private:
+    /**
+     * Platform dependent implementation
+    */
     static void internalRead(const string& directory,
                              const string& relative,
                              vector<shared_ptr<FileInfo>>& filesInfo);

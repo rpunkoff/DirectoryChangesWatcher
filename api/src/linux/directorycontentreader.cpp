@@ -17,9 +17,11 @@
 
 namespace api {
 /**
- * @brief FillFileInfo заполнение структуры FileInfo из полученной dirent
- * @param fData структура WIN32_FIND_DATAW
- * @return структура FileInfo
+ * @brief FillFileInfo - Fill the FileInfo struct from the given platform dependent struct stat
+ * @param filename - File name
+ * @param filestat - The given stat struct
+ * @param isDirectory - filename is directory or not
+ * @return FileInfo
  */
 FileInfo FillFileInfo(const string filename, const struct stat& filestat, bool isDirectory) {
     FileInfo fInfo;
@@ -38,10 +40,10 @@ FileInfo FillFileInfo(const string filename, const struct stat& filestat, bool i
 }
 
 /**
- * @brief InternalRead рекурсивное чтение директории
- * @param directory директория для чтения
- * @param relative относительный путь
- * @param filesInfo массив структур FileInfo
+ * @brief InternalRead - Recursively reading all subdirectories
+ * @param directory directory path
+ * @param relative - ralative path
+ * @param filesInfo - all read files and subdirectories
 */
 void DirectoryContentReader::internalRead(const string& directory, const string& relative, vector<shared_ptr<FileInfo>>& filesInfo) {
     DIR* d{};
@@ -51,6 +53,7 @@ void DirectoryContentReader::internalRead(const string& directory, const string&
     fullPath.reserve(directory.size() + relative.size() + 1);
     fullPath += relative;
 
+    //try to open the directory
     d = opendir(fullPath.c_str());
 
     if(!d) {
@@ -59,6 +62,7 @@ void DirectoryContentReader::internalRead(const string& directory, const string&
 
     while (true) {
         errno = {};
+        //try to read the directory
         dir = readdir(d);
         if(!dir) {
             if(!errno) {
@@ -81,19 +85,23 @@ void DirectoryContentReader::internalRead(const string& directory, const string&
         newFullPath += dir->d_name;
 
         struct stat filestat;
+        //create file stat
         auto statResult = utils::CreateStat(newFullPath, filestat);
 
         if(statResult) {
             throw DirectoryChangesException(statResult);
         }
 
+        //check is dir or not
         bool isDirectory = utils::IsDirectory(filestat);
+        //fill file info
         auto fileInfo = FillFileInfo(newFullPath, filestat, isDirectory);
 
         auto found = std::find_if(std::rbegin(filesInfo), std::rend(filesInfo), [&f = fullPath](const shared_ptr<FileInfo>& item){
             return f == item->fileName;
         });
 
+        //erase an existing item
         if(found != std::rend(filesInfo)) {
             filesInfo.erase((found + 1).base());
         }
@@ -104,6 +112,7 @@ void DirectoryContentReader::internalRead(const string& directory, const string&
             if(fullPath.back() != '/') {
                 fullPath += '/';
             }
+            //read subdirectory
             internalRead(fullPath, dir->d_name, filesInfo);
         }
     }

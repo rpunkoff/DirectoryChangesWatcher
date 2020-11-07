@@ -35,7 +35,6 @@ void AddDirectories(const std::wstring& path,  std::vector<std::string>& direcro
 
     if(finder.isValid()){
         while (true) {
-           // InsertFile(fullPath, fData, filesInfo, event);
             if((fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY &&
                wcscmp(fData.cFileName, L".") != 0 &&
                wcscmp(fData.cFileName, L"..") != 0) {
@@ -53,10 +52,8 @@ void AddDirectories(const std::wstring& path,  std::vector<std::string>& direcro
             }
         }
     }
-
 }
 
-//Обработка изменеия на ФС
 void OnDirectoryChanged(DWORD errorCode,
                         BYTE* buffer,
                         LPOVERLAPPED overlapped,
@@ -79,7 +76,6 @@ void DirectoryChangesWatcher::run() {
 
    AddDirectories(utils::s2ws(directory), m_data->m_watchedDirectories);
 
-    //открытие директории для наблюдения
     m_data->m_directoryHandle = CreateFileW(utils::s2ws(directory).c_str(), //имя директории
                         FILE_LIST_DIRECTORY,
                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -88,7 +84,6 @@ void DirectoryChangesWatcher::run() {
                         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
                         nullptr);
 
-    //не удалось открыть
     if(m_data->m_directoryHandle == INVALID_HANDLE_VALUE) {
         throw DirectoryChangesException(static_cast<int>(GetLastError()));
     }
@@ -99,7 +94,6 @@ void DirectoryChangesWatcher::run() {
         throw DirectoryChangesException(static_cast<int>(GetLastError()));
     }
 
-    //событие наблюедния за директорией
     directoryEvent = CreateEvent(nullptr,TRUE,FALSE,nullptr);
 
     if(!directoryEvent) {
@@ -110,10 +104,8 @@ void DirectoryChangesWatcher::run() {
     events[0] = m_data->m_terminateEvent;
     events[1] = directoryEvent;
 
-    //цикл наблюдения за изменениями в директории
     while(!m_stopped.load()) {
         BYTE buffer[BUFFER_LENGTH];
-        //запуск функции наблюдения
         ::ReadDirectoryChangesW(m_data->m_directoryHandle,
                                              &buffer,
                                              BUFFER_LENGTH,
@@ -127,18 +119,15 @@ void DirectoryChangesWatcher::run() {
                                              &m_data->m_overlapped,
                                              nullptr);
 
-        //ожидание двух событий, по m_terminateEvent выход из цикла, по directoryEvent - дальнейшая обработка события
         idWaitResult = WaitForMultipleObjects(EventsSize, events, FALSE, Timeout);
 
         switch (idWaitResult) {
-        case WAIT_OBJECT_0: { //сработал m_terminateEvent
-            //завершение алгоритма
+        case WAIT_OBJECT_0: { //terminate event
             m_data->m_directoryHandle = nullptr;
             ::ResetEvent(m_data->m_terminateEvent);
             break;
         }
-        case WAIT_OBJECT_0 + 1: { //сработал directoryEvent
-            //обработка события изменения в директории
+        case WAIT_OBJECT_0 + 1: { //directory changes event
             auto errorCode = ::GetLastError();
             OnDirectoryChanged(errorCode, buffer, &m_data->m_overlapped, directory, m_data->m_watchedDirectories, sent);
             break;
@@ -167,13 +156,9 @@ void OnDirectoryChanged(DWORD errorCode,
     }
 
     BYTE* bytes = buffer;
-    //цикл обработки событий
     while(true) {
-
-        //получение события
         auto notifyInformation = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(bytes);
 
-        //ReadDirectoryChangesW работает с wchar_t*, необходимо преобразование
         auto size = notifyInformation->FileNameLength / 2;
         auto filename = utils::ReplaceAll(utils::ws2s(std::wstring(notifyInformation->FileName, size)), "\\", 1, "/", 1);
 
@@ -181,7 +166,6 @@ void OnDirectoryChanged(DWORD errorCode,
 
         bool needSend {true};
 
-        //определение типа события (что с файлом происходило)
         switch(notifyInformation->Action) {
             case FILE_ACTION_ADDED: type = DirectoryChangesType::Added; break;
             case FILE_ACTION_REMOVED: type = DirectoryChangesType::Removed; break;
@@ -217,7 +201,6 @@ void OnDirectoryChanged(DWORD errorCode,
                     directories.erase(found);
                 }
             }
-            //событие принято, отправка обработчика доааного события в очередь на обработку
             DirectoryChangesHandler handler {std::move(path), std::move(type), isDirectory};
             auto fInfo = std::make_shared<FileInfo>(handler.handle());
             if(!fInfo->isDirectory ||
@@ -230,7 +213,6 @@ void OnDirectoryChanged(DWORD errorCode,
             break;
         }
 
-        //сдвиг на следущую структуру
         bytes += notifyInformation->NextEntryOffset;
     }
 }

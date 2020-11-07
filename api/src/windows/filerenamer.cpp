@@ -5,7 +5,6 @@
 
 namespace api {
 bool Rename(const std::wstring& from, const std::wstring& to) {
-    //запуск переименования файла
 	return MoveFileW(from.c_str(), to.c_str()) != 0;
 }
 }

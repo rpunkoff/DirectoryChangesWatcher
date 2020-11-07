@@ -54,29 +54,25 @@ Base.AppDelegate {
                 font.bold: true
                 font.italic: true
 
-                //смысл такой, что переименовывать надо файл, а не относительный путь к нему,
-                //если он лежит в поддиректории
                 Component.onCompleted: {
-                    //получение файла с относительным путем
+                    //get the full path to file
                     var txt = root.itemData
-                    //поиск последнего символа "/"
+                    //looking for the last "/" charachter
                     var lastIndex = txt.lastIndexOf('/')
-                    if(lastIndex > -1) { //если есть такой, то есть файл лежит где-то в поддиректории
-                        //получить относительный путь
+                    if(lastIndex > -1) {
+                        //get the full path to dir
                         _textinput.prefix = txt.substring(0, lastIndex + 1)
-                        //получить имя файла (видимый текст для редактирования)
+                        //get the file name
                         _textinput.visibleText = txt.substring(lastIndex + 1, txt.length)
                     }else {
-                        //получить имя файла (видимый текст для редактирования)
+                        //get the file name
                         _textinput.visibleText = txt
                     }
                 }
 
-                //переименование файла
                 function rename() {
                     var txt = _textinput.prefix + _textinput.text
-                    //отправка запроса на переименование
-                    if(txt !== root.itemData) { //зачем дергать переименовывание лишний раз?
+                    if(txt !== root.itemData) {
                         root.renamed(root.itemData, txt);
                     }
                 }

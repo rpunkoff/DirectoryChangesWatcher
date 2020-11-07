@@ -6,7 +6,6 @@
 
 namespace api {
 bool Rename(const std::string& from, const std::string& to) {
-    //запуск переименования файла
     return rename(from.c_str(), to.c_str()) == 0;
 }
 

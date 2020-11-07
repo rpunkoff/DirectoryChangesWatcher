@@ -37,7 +37,7 @@ void QDirectoryContentReader::run() {
     Q_D(QDirectoryContentReader);
     d->m_isRead = true;
     try{
-        auto data = DirectoryContentReader::read(d->m_directory.toStdString(), "");
+        auto data = DirectoryContentReader::read(d->m_directory.toStdString());
         d->m_isRead = false;
 
         for(auto item : data){

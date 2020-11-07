@@ -19,23 +19,4 @@ void DirectoryChangesHandler::OnChanged(FileInfo& fInfo) {
     fInfo.modificationDate = std::string(time, strlen(time));
     fInfo.size = static_cast<unsigned long>(filestat.st_size);
 }
-
-// FileInfo DirectoryChangesHandler::handle() noexcept {
-    // //создание структуры с именем файла и типом изменения
-    // FileInfo fInfo{ m_isDirectory == std::nullopt ? false :  m_isDirectory.value(), m_type, 0, m_fileName, ""};
-
-    // switch (m_type) {
-    // case DirectoryChangesType::Removed :
-    // case DirectoryChangesType::OldRenamed: return fInfo;
-    // case DirectoryChangesType::Added:
-    // case DirectoryChangesType::Modified:
-    // case DirectoryChangesType::NewRenamed:
-        // //обработка изменения
-        // OnChanged(fInfo);
-        // return fInfo;
-    // default: break;
-    // }
-
-    // return FileInfo{};
-// }
 }

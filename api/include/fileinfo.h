@@ -10,14 +10,14 @@ using std::string;
 namespace api {
 /**
  * @brief The FileInfo struct
- * Информация о файле и изменениях в нем
+ * An information about a changed file
  */
 struct FileInfo {
-	bool isDirectory {false};                                  //файл или директория
-	DirectoryChangesType type {DirectoryChangesType::Unknown}; //тип изменения
-	uint64_t size {0};                                         //размер файла
-	string fileName {};                                        //имя файла
-	string modificationDate {};                                //дата модификации
+    bool isDirectory {false};                                  //directory or file
+    DirectoryChangesType type {DirectoryChangesType::Unknown}; //change type
+    uint64_t size {0};                                         //file size
+    string fileName {};                                        //file name
+    string modificationDate {};                                //modification date
 };
 }
 

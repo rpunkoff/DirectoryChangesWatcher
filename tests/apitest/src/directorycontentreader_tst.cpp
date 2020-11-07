@@ -48,32 +48,27 @@ void DirectoryContentReaderTest::cleanupTestCase() {
 
 void DirectoryContentReaderTest::testReadUnexistedDirectory_data() {
     QTest::addColumn<QString>("directory");
-    QTest::addColumn<QString>("relative");
 
-    QTest::newRow("is_not_directory") << QString("testdir") << "";
-    QTest::newRow("directory_does_not_exist") << testDir() + "testdir123" << "";
-    QTest::newRow("directory_does_not_exist") << testDir() << "testdir123";
+    QTest::newRow("is_not_directory") << QString("testdir");
+    QTest::newRow("directory_does_not_exist") << testDir() + "testdir123" ;
 }
 
 void DirectoryContentReaderTest::testReadUnexistedDirectory() {
     QFETCH(QString, directory);
-    QFETCH(QString, relative);
 
     directory.prepend(testDir());
 
-    QVERIFY_EXCEPTION_THROWN(DirectoryContentReader::read(directory.toStdString(), relative.toStdString()),
+    QVERIFY_EXCEPTION_THROWN(DirectoryContentReader::read(directory.toStdString()),
                              api::DirectoryChangesException);
 }
 
 void DirectoryContentReaderTest::testReadExistedDirectory_data() {
     QTest::addColumn<int>("count");
     QTest::addColumn<QString>("directory");
-    QTest::addColumn<QString>("relative");
 
     for(const auto& d : m_data) {
         if(d.type == directory_item_t::directory) {
-            QString str = d.directory + d.relative;
-            QTest::newRow(str.toStdString().c_str()) << d.count << d.directory << d.relative;
+            QTest::newRow(d.directory.toStdString().c_str()) << d.count << d.directory;
         }
     }
 }
@@ -81,9 +76,8 @@ void DirectoryContentReaderTest::testReadExistedDirectory_data() {
 void DirectoryContentReaderTest::testReadExistedDirectory() {
     QFETCH(int, count);
     QFETCH(QString, directory);
-    QFETCH(QString, relative);
 
-    auto files = DirectoryContentReader::read(directory.toStdString(), relative.toStdString());
+    auto files = DirectoryContentReader::read(directory.toStdString());
 
     QCOMPARE(static_cast<size_t>(count), files.size());
 }

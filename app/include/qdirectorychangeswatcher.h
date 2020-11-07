@@ -6,10 +6,7 @@
 
 class FileInfoWrapper;
 class QDirectoryChangesWatcherPrivate;
-/**
- * @brief The QDirectoryChangesObserver class
- * Класс, наблюдающий за файлами в директории и обрабатывающий результаты
- */
+
 class QDirectoryChangesWatcher : public QObject {
 	Q_OBJECT
 public:
@@ -18,9 +15,6 @@ public:
 
 public slots:
     void run();
-    /**
-     * @brief stop Остановка наблюдения и обработки событий
-     */
     void stop();
 
 signals:

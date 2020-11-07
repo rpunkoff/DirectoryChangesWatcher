@@ -56,18 +56,26 @@ void InitWatching(DirectoryChangesWatcherPlatformData::data& data) {
     ThrowIfErrorOccured(epoll_ctl(data.m_epollFd, EPOLL_CTL_ADD, data.m_stopFds[PipeReadIndex], &data.m_stopEvent));
 }
 
+/**
+ * @brief WatchDirectories - start the recursyvely watching
+ * @param directory - path
+ * @param data - platform dependent internal data
+ * @param directoriesToWatch - list of directories for watching
+ */
 void WatchDirectories(const std::string& directory,
                       const DirectoryChangesWatcherPlatformData::data& data,
                       std::unordered_map<int, std::string>& directoriesToWatch ) {
     DIR* d{};
     dirent* dir{};
 
+    //try to open dir
     d = opendir(directory.c_str());
 
     if(!d) {
         throw DirectoryChangesException(errno);
     }
 
+    //add dir to watching
     int watchDescriptor = inotify_add_watch(data.m_inotifyFd, directory.c_str(), EventMask);
 
     ThrowIfErrorOccured(watchDescriptor);
@@ -76,6 +84,7 @@ void WatchDirectories(const std::string& directory,
 
     while (true) {
         errno = {};
+        //read the current dir
         dir = readdir(d);
         if(!dir) {
             if(!errno) {
@@ -89,6 +98,7 @@ void WatchDirectories(const std::string& directory,
             continue;
         }
 
+        //create new path
         std::string newFullPath;
         newFullPath.reserve(directory.size() + strnlen(dir->d_name, 256));
         newFullPath += directory;
@@ -98,6 +108,7 @@ void WatchDirectories(const std::string& directory,
         newFullPath += dir->d_name;
 
         struct stat filestat;
+        //create stat
         auto statResult = utils::CreateStat(newFullPath, filestat);
 
         ThrowIfErrorOccured(statResult);
@@ -105,11 +116,16 @@ void WatchDirectories(const std::string& directory,
         bool isDirectory = utils::IsDirectory(filestat);
 
         if(isDirectory) {
+            //watch subdirectory
              WatchDirectories(newFullPath, data, directoriesToWatch);
         }
     }
 }
 
+/**
+ * @brief CloseWatching - close watching
+ * @param data - platform dependent internal data
+ */
 void CloseWatching(DirectoryChangesWatcherPlatformData::data& data) {
     if(data.m_inotifyFd) {
         epoll_ctl(data.m_epollFd, EPOLL_CTL_DEL, data.m_inotifyFd, 0);
@@ -133,6 +149,14 @@ void CloseWatching(DirectoryChangesWatcherPlatformData::data& data) {
 
 const size_t EVENT_BUFFER_SIZE = MAX_EVENTS * (EVENT_SIZE + 16);
 
+/**
+ * @brief ReadEvents - read events from raw data buffer
+ * @param data - platform dependent internal data
+ * @param watchedDirectories - list of watching directories
+ * @param eventsData - raw data buffer
+ * @param size - size of buffer
+ * @param sent - callback to sent an event about some changes
+ */
 void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
                 std::unordered_map<int, std::string>& watchedDirectories,
                 uint8_t* eventsData,
@@ -146,6 +170,7 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
             continue;
         }
 
+        //check for event-> wd exists in the watching directories list
         auto iter = watchedDirectories.find(event->wd);
 
         if(iter == std::end(watchedDirectories)) {
@@ -159,11 +184,13 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
         bool needSend {true};
         bool isDirectory {false};
 
+        //determine event is dir or file
         if((event->mask & IN_ISDIR) != 0) {
             event->mask = event->mask & ~IN_ISDIR;
             isDirectory = true;
         }
 
+        //get event type
         switch(event->mask) {
             case IN_DELETE:     type = DirectoryChangesType::Removed;    break;
             case IN_MODIFY:     type = DirectoryChangesType::Modified;   break;
@@ -175,6 +202,7 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
 
         if(isDirectory) {
             if(type == DirectoryChangesType::Added || type == DirectoryChangesType::NewRenamed) {
+                //if some directory was added to fs then this directory will add into directories list
                 int watchDescriptor = inotify_add_watch(data.m_inotifyFd, path.c_str(), EventMask);
                 ThrowIfErrorOccured(watchDescriptor);
                 watchedDirectories[watchDescriptor] = path.back() == '/' ? path : path + "/";
@@ -182,6 +210,7 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
                     path.erase(path.size() - 1);
                 }
             } else if(type == DirectoryChangesType::Removed || type == DirectoryChangesType::OldRenamed) {
+                //if some directory was removed from fs then this shouldn't be on the watchlist
                 int result = inotify_rm_watch(data.m_inotifyFd, iter->first);
                 ThrowIfErrorOccured(result);
                 iter = watchedDirectories.erase(iter);
@@ -190,6 +219,7 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
 
         if(needSend) {
             DirectoryChangesHandler handler {std::move(path), std::move(type), std::move(isDirectory)};
+            //send the callback with the event
             sent.raise(std::make_shared<FileInfo>(handler.handle()));
         }
 
@@ -197,11 +227,18 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
     }
 }
 
+/**
+ * @brief HandleEvents - handle events about some changes in watching directories
+ * @param watchedDirectories - list of watching directories
+ * @param data - platform dependent internal data
+ * @param sent - callback to sent an event about some changes
+ */
 void HandleEvents(std::unordered_map<int, std::string>& watchedDirectories,
                   DirectoryChangesWatcherPlatformData::data& data,
                   send_t& sent) {
     static uint8_t eventBuffer[EVENT_BUFFER_SIZE] {};
     auto timeout = -1;
+    //wait for an event rises
     auto readyFdsCount = epoll_wait(data.m_epollFd, data.m_events, MAX_EPOLL_EVENTS, timeout);
 
     if(readyFdsCount == -1) {
@@ -213,12 +250,14 @@ void HandleEvents(std::unordered_map<int, std::string>& watchedDirectories,
             break;
         }
 
+        //read data into "eventBuffer"
         auto length = read(data.m_events[index].data.fd, eventBuffer, EVENT_BUFFER_SIZE);
         if(length == -1) {
             if(errno == EINTR) {
                 break;
             }
         } else {
+            //read events
             ReadEvents(data, watchedDirectories, eventBuffer, length, sent);
         }
     }

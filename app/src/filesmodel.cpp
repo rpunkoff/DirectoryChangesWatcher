@@ -29,7 +29,6 @@ QVariant FilesModel::data(const QModelIndex &index, int role) const {
     switch(role){
     case NameRole: return fInfo->fileInfo()->fileName.c_str();
     case DateRole: return fInfo->fileInfo()->modificationDate.c_str();
-        //размер файла в килобайтах с точностью до одного знака после запятой
     case SizeRole: return fInfo->fileInfo()->isDirectory ? "" : QString::number(fInfo->fileInfo()->size / 1024.0, 'f', 1);
     case DirectoryRole: return fInfo->fileInfo()->isDirectory;
     }
@@ -206,7 +205,6 @@ void FilesModel::handle(FileInfoWrapper* fInfo) {
             return;
         }
 
-        //обработка добавления файла в представление
         const auto& type = fInfo->fileInfo()->type;
         switch (type) {
             case api::DirectoryChangesType::Added:

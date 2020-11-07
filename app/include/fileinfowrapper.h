@@ -7,12 +7,8 @@
 
 #include <fileinfo.h>
 
-/**
- * @brief The FileInfo class
- * Хранилище информации о файле, используется в моделе
- */
 class FileInfoWrapper final : public QObject {
-	Q_OBJECT
+    Q_OBJECT
 public:
     FileInfoWrapper(std::shared_ptr<api::FileInfo> fInfo, QObject * parent = nullptr);
     ~FileInfoWrapper() override = default;

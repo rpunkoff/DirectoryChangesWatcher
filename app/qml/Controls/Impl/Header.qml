@@ -76,7 +76,6 @@ Base.AppPanel {
             selectFolder: true
             folder: "."
             onAccepted: {
-                //убрать из полученного пути file:///
                 var path = UrlFormatter.format(_fileDialog.fileUrl.toString())
                 if(_pathLbl.text !== path) {
                     _pathLbl.fullText = path

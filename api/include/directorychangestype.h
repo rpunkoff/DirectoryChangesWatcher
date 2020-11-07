@@ -4,7 +4,7 @@
 namespace api {
 /**
  * @brief The DirectoryChangesType enum
- * Платформонезависимый статус изменения файла
+ * Platform independent status of change in some file
  */
 enum class DirectoryChangesType {
 	Unknown = 0,

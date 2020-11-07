@@ -5,11 +5,11 @@
 
 namespace api {
     /**
-     * @brief Rename - переименование файла на файловой системе.
-     * В параметрах должны быть указаны не просто имена файлов, а полный путь
-     * @param from - старое имя
-     * @param to - новое имя
-     * @return  true - если файл был переименован, в противном случае - false
+     * @brief Rename - rename given file "from" on filesystem to file "to".
+     * Paths "from" and "to" should be full paths
+     * @param from - old path
+     * @param to - new path
+     * @return This function will return true if the file "from" was renamed to the file "to", overwise - false
      */
     bool Rename(const std::wstring& from, const std::wstring& to);
 }

@@ -36,9 +36,6 @@ Rectangle {
             width: _tableView.width / 7 * 5
             delegate: TableViewEditableCellDelegate {
                 id: _delegateName
-//                textAnchors.left: _delegateName.left
-//                textAnchors.leftMargin: Theme.mediumOffset
-
                 elideMode: styleData.elideMode
                 canEdit: model === null ? false : !model.isDirectory
                 itemSelected: styleData.selected

@@ -1,4 +1,4 @@
-#ifndef DIRECTORY_CHANGES_WATCHER_H
+﻿#ifndef DIRECTORY_CHANGES_WATCHER_H
 #define DIRECTORY_CHANGES_WATCHER_H
 
 #include <memory>
@@ -14,7 +14,10 @@ using send_t = utils::Event<std::shared_ptr<FileInfo>>;
 struct DirectoryChangesWatcherPlatformData;
 
 /**
- * @brief The DirectoryChangesWatcher class обертка для наблюдения за директориями
+ * @brief The DirectoryChangesWatcher class
+ * This class watches for all changes in a given directory including subdirectories
+ * This class doesn't create any threads and work in single thread mode
+ * For this class usage see the tests
  */
 class DirectoryChangesWatcher final {
 public:
@@ -28,15 +31,37 @@ public:
 
     ~DirectoryChangesWatcher() noexcept;
 
+    /**
+     * @brief directory
+     * @return Get the given directory for watching
+     */
     const std::string& directory() const;
 
+    /**
+     * @brief isStopped - Check for watching stopped or not
+     * @return if the watching is stopped this method returns true, overwise - false
+     */
     bool isStopped() const;
 
+
+    /**
+     * @brief start - check for watching for directory stopped or not and if it is stopped then this method sets the flag stopped into the "false" state
+     * @return if watching was not stopped then this method returns "false", overwise - true
+     */
     bool start() noexcept;
+
+    /**
+     * @brief run - Implementation of watching for directory changes
+     * This method should execute in another thread
+     */
     void run();
+
+    /**
+     * @brief stop - Stop the watching for directory
+     */
     void stop() noexcept;
 
-    //callback для отправки события об изменении в директории
+    //callback for sending an event about some changes in the watching directory
     send_t sent;
 
 private:
@@ -44,8 +69,8 @@ private:
     bool internalStart();
     void internalStop();
 
-    std::atomic_bool m_stopped {true};    //флаг остановки
-    std::string m_directory;  //директория наблюдения
+    std::atomic_bool m_stopped {true};
+    std::string m_directory;
     std::unique_ptr<DirectoryChangesWatcherPlatformData> m_data;
 };
 }

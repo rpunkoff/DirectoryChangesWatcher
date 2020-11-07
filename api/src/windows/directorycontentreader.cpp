@@ -13,11 +13,6 @@ using utils::ReplaceAll;
 #include <iostream>
 
 namespace api {
-/**
- * @brief FillFileInfo заполнение структуры FileInfo из полученной WIN32_FIND_DATAW
- * @param fData структура WIN32_FIND_DATAW
- * @return структура FileInfo
- */
 shared_ptr<FileInfo> FillFileInfo(const std::string& directory, const WIN32_FIND_DATAW& fData) {
     shared_ptr<FileInfo> fInfo = std::make_shared<FileInfo>();
     fInfo->isDirectory = (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY;
@@ -25,7 +20,6 @@ shared_ptr<FileInfo> FillFileInfo(const std::string& directory, const WIN32_FIND
     fInfo->modificationDate = FileTimeToString(fData.ftCreationTime);
     fInfo->size = FileSize(fData.nFileSizeHigh, fData.nFileSizeLow);
     fInfo->type = DirectoryChangesType::Added;
-    //замена бэкслешей на нормальные слеши
     fInfo->fileName = directory;
     std::string filename = utils::ws2s(fData.cFileName);
     fInfo->fileName.reserve(directory.size() + filename.size() + 2);
@@ -63,21 +57,13 @@ inline void InsertFile(const std::string& directory,
         }
 
         filesInfo.push_back(FillFileInfo(directory, fData));
-        //если найден файл
         if((fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY) {
             auto temp = ReplaceAll( utils::ws2s(fData.cFileName), "\\", 1, "/", 1) + "/";
-            //рекурсивный запуск чтения в поддиректории
             fn.raise(directory, temp, filesInfo);
         }
     }
 }
 
-/**
- * @brief InternalRead рекурсивное чтение директории
- * @param directory директория для чтения
- * @param relative относительный путь
- * @return массив структур FileInfo
- */
 void DirectoryContentReader::internalRead(const string& directory,
                                           const string& relative,
                                           vector<shared_ptr<FileInfo>>& filesInfo) {
@@ -91,10 +77,8 @@ void DirectoryContentReader::internalRead(const string& directory,
 
     fullPath += relative;
 
-    //поиск первого вхождения
     FilesFinder finder(utils::s2ws(fullPath + "/*"), fData);
 
-    //проверка: получен ли HANDLE
     if(!finder.isValid()){
        throw DirectoryChangesException(static_cast<int>(GetLastError()));
     }
@@ -102,7 +86,6 @@ void DirectoryContentReader::internalRead(const string& directory,
     read_t event;
     event.attachFunction(DirectoryContentReader::internalRead);
 
-    //цикл чтения всех вхождений
     while (true) {
         InsertFile(fullPath, fData, filesInfo, event);
         auto result = finder.findNext(fData);

@@ -31,7 +31,6 @@ DirectoryChangesHandler& DirectoryChangesHandler::operator=(DirectoryChangesHand
 }
 
 FileInfo DirectoryChangesHandler::handle() noexcept {
-    //создание структуры с именем файла и типом изменения
     FileInfo fInfo{ m_isDirectory == std::nullopt ? false : m_isDirectory.value(), m_type, 0, m_fileName, ""};
 
     switch (m_type) {
@@ -40,7 +39,6 @@ FileInfo DirectoryChangesHandler::handle() noexcept {
     case DirectoryChangesType::Added:
     case DirectoryChangesType::Modified:
     case DirectoryChangesType::NewRenamed:
-        //обработка изменения
         OnChanged(fInfo);
         return fInfo;
     default: break;

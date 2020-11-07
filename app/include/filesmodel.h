@@ -9,9 +9,6 @@
 
 #include <QAbstractTableModel>
 
-/**
- * @brief The FilesModel class - модель данных
- */
 class FilesModel : public QAbstractTableModel {
     Q_OBJECT
 
@@ -36,22 +33,7 @@ public:
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     size_t count() const;
 
-    /**
-      * @brief handle обработка изменения файла в моделе данных
-      * @param fInfo - класс, содержащий изменения в файле
-      */
-    /**
-      * @brief add очистка модели
-      */
     Q_INVOKABLE void clear();
-
-    /**
-      * @brief rename отправка запроса на переименование файла
-      * @param from - имя файла до изменения (старое название). Содержит полный путь
-      * @param to - имя файла после изменения (новое название). Содержит полный путь
-      * @return true - если файл был переименован, в противном случае - false
-      */
-//    Q_INVOKABLE bool rename(const QString& from, const QString& to);
 
 public slots:
     void handle(FileInfoWrapper* fInfo);
