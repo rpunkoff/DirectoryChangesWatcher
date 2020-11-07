@@ -18,12 +18,23 @@ void DirectoryChangesWatcher::createData() {
 void DirectoryChangesWatcher::internalStop() {
     if(!isStopped()) {
         m_stopped.store(true);
-        SetEvent(m_data->m_terminateEvent);
+        //set the terminate event
+        if(m_data && m_data->m_terminateEvent) {
+            SetEvent(m_data->m_terminateEvent);
+        }
     }
 }
 
 bool DirectoryChangesWatcher::internalStart() {
     return !(m_stopped = false);
+}
+
+bool DirectoryChangesWatcher::isValid() const {
+    std::lock_guard l(m_mutex);
+
+    return m_data &&
+            m_data->m_directoryHandle &&
+            m_data->m_terminateEvent;
 }
 
 size_t const EventsSize = 2;
@@ -62,6 +73,8 @@ void OnDirectoryChanged(DWORD errorCode,
                         send_t& sent);
 
 void DirectoryChangesWatcher::run() {
+    createData();
+
     DWORD idWaitResult;
 
     HANDLE directoryEvent;
@@ -76,7 +89,8 @@ void DirectoryChangesWatcher::run() {
 
    AddDirectories(utils::s2ws(directory), m_data->m_watchedDirectories);
 
-    m_data->m_directoryHandle = CreateFileW(utils::s2ws(directory).c_str(), //имя директории
+   //open directory for watching
+    m_data->m_directoryHandle = CreateFileW(utils::s2ws(directory).c_str(),
                         FILE_LIST_DIRECTORY,
                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                         nullptr,
@@ -100,12 +114,14 @@ void DirectoryChangesWatcher::run() {
         throw DirectoryChangesException(static_cast<int>(GetLastError()));
     }
 
+    //set events
     m_data->m_overlapped.hEvent=directoryEvent;
     events[0] = m_data->m_terminateEvent;
     events[1] = directoryEvent;
 
     while(!m_stopped.load()) {
         BYTE buffer[BUFFER_LENGTH];
+        //read changes async
         ::ReadDirectoryChangesW(m_data->m_directoryHandle,
                                              &buffer,
                                              BUFFER_LENGTH,
@@ -119,16 +135,21 @@ void DirectoryChangesWatcher::run() {
                                              &m_data->m_overlapped,
                                              nullptr);
 
+        //waiting for terminate or fs events
         idWaitResult = WaitForMultipleObjects(EventsSize, events, FALSE, Timeout);
 
         switch (idWaitResult) {
         case WAIT_OBJECT_0: { //terminate event
-            m_data->m_directoryHandle = nullptr;
-            ::ResetEvent(m_data->m_terminateEvent);
+            std::lock_guard l(m_mutex);
+            ResetEvent(m_data->m_terminateEvent);
+            CloseHandle(m_data->m_terminateEvent);
+            CloseHandle(m_data->m_directoryHandle);
+            m_data.reset();
             break;
         }
         case WAIT_OBJECT_0 + 1: { //directory changes event
             auto errorCode = ::GetLastError();
+            //handle the event
             OnDirectoryChanged(errorCode, buffer, &m_data->m_overlapped, directory, m_data->m_watchedDirectories, sent);
             break;
         }
@@ -185,6 +206,7 @@ void OnDirectoryChanged(DWORD errorCode,
                     if(p.back() != '/') {
                         p += '/';
                     }
+                    //add directory to list
                     directories.push_back(p);
                  }
             } else if(type == DirectoryChangesType::Removed || type == DirectoryChangesType::OldRenamed) {
@@ -198,6 +220,7 @@ void OnDirectoryChanged(DWORD errorCode,
 
                 if(found != std::end(directories)) {
                     isDirectory = true;
+                    //remove directory from list
                     directories.erase(found);
                 }
             }

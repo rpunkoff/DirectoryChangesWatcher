@@ -23,7 +23,7 @@ void DirectoryChangesWatcher::internalStop() {
     if(!isStopped()) {
         m_stopped.store(true);
         uint8_t buf[1]{0};
-        auto result = write(m_data->m_data.m_stopFds[PipeWriteIndex], buf, 1);
+        auto result = write(m_data->data.m_stopFds[PipeWriteIndex], buf, 1);
         UNUSED(result);
     }
 }
@@ -32,13 +32,19 @@ bool DirectoryChangesWatcher::internalStart() {
     return !(m_stopped = false);
 }
 
+bool DirectoryChangesWatcher::isValid() const {
+    std::lock_guard l(m_mutex);
+    return m_data && m_data->data.m_epollFd &&
+            m_data->data.m_inotifyFd;
+}
+
 void ThrowIfErrorOccured(int errorCode) {
     if(errorCode == -1) {
         throw DirectoryChangesException(errno);
     }
 }
 
-void InitWatching(DirectoryChangesWatcherPlatformData::data& data) {
+void InitWatching(DirectoryChangesWatcherPlatformData::data_t& data) {
     ThrowIfErrorOccured(pipe2(data.m_stopFds, O_NONBLOCK));
 
     data.m_inotifyFd = inotify_init1(IN_NONBLOCK);
@@ -63,7 +69,7 @@ void InitWatching(DirectoryChangesWatcherPlatformData::data& data) {
  * @param directoriesToWatch - list of directories for watching
  */
 void WatchDirectories(const std::string& directory,
-                      const DirectoryChangesWatcherPlatformData::data& data,
+                      const DirectoryChangesWatcherPlatformData::data_t& data,
                       std::unordered_map<int, std::string>& directoriesToWatch ) {
     DIR* d{};
     dirent* dir{};
@@ -126,7 +132,7 @@ void WatchDirectories(const std::string& directory,
  * @brief CloseWatching - close watching
  * @param data - platform dependent internal data
  */
-void CloseWatching(DirectoryChangesWatcherPlatformData::data& data) {
+void CloseWatching(DirectoryChangesWatcherPlatformData::data_t& data) {
     if(data.m_inotifyFd) {
         epoll_ctl(data.m_epollFd, EPOLL_CTL_DEL, data.m_inotifyFd, 0);
     }
@@ -157,7 +163,7 @@ const size_t EVENT_BUFFER_SIZE = MAX_EVENTS * (EVENT_SIZE + 16);
  * @param size - size of buffer
  * @param sent - callback to sent an event about some changes
  */
-void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
+void ReadEvents(const DirectoryChangesWatcherPlatformData::data_t& data,
                 std::unordered_map<int, std::string>& watchedDirectories,
                 uint8_t* eventsData,
                 size_t size,
@@ -234,7 +240,7 @@ void ReadEvents(const DirectoryChangesWatcherPlatformData::data& data,
  * @param sent - callback to sent an event about some changes
  */
 void HandleEvents(std::unordered_map<int, std::string>& watchedDirectories,
-                  DirectoryChangesWatcherPlatformData::data& data,
+                  DirectoryChangesWatcherPlatformData::data_t& data,
                   send_t& sent) {
     static uint8_t eventBuffer[EVENT_BUFFER_SIZE] {};
     auto timeout = -1;
@@ -264,19 +270,19 @@ void HandleEvents(std::unordered_map<int, std::string>& watchedDirectories,
 }
 
 namespace {
-using close_watching_t = std::add_pointer<void(DirectoryChangesWatcherPlatformData::data& data)>::type;
+using close_watching_t = std::add_pointer<void(DirectoryChangesWatcherPlatformData::data_t& data)>::type;
 
 class CloseWatchingGuard {
 public:
-    CloseWatchingGuard(close_watching_t fn, DirectoryChangesWatcherPlatformData::data& d);
+    CloseWatchingGuard(close_watching_t fn, DirectoryChangesWatcherPlatformData::data_t& d);
     ~CloseWatchingGuard();
 
 private:
     close_watching_t m_fn;
-    DirectoryChangesWatcherPlatformData::data& m_data;
+    DirectoryChangesWatcherPlatformData::data_t& m_data;
 };
 
-CloseWatchingGuard::CloseWatchingGuard(close_watching_t fn, DirectoryChangesWatcherPlatformData::data& d) :
+CloseWatchingGuard::CloseWatchingGuard(close_watching_t fn, DirectoryChangesWatcherPlatformData::data_t& d) :
     m_fn(fn),
     m_data(d){ }
 
@@ -286,17 +292,18 @@ CloseWatchingGuard::~CloseWatchingGuard(){
 }
 
 void DirectoryChangesWatcher::run() {
-    InitWatching(m_data->m_data);
-    WatchDirectories(directory(), m_data->m_data, m_data->m_watchedDirectories);
+	createData();
+    InitWatching(m_data->data);
+    WatchDirectories(directory(), m_data->data, m_data->m_watchedDirectories);
 
-    CloseWatchingGuard guard(&CloseWatching, m_data->m_data);
+    CloseWatchingGuard guard(&CloseWatching, m_data->data);
 
     while (true) {
         if (isStopped()) {
           break;
         }
 
-        HandleEvents(m_data->m_watchedDirectories, m_data->m_data, sent);
+        HandleEvents(m_data->m_watchedDirectories, m_data->data, sent);
     }
 }
 }

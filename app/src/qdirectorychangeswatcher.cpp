@@ -71,12 +71,11 @@ void QDirectoryChangesWatcher::run() {
 void QDirectoryChangesWatcher::stop() {
     Q_D(QDirectoryChangesWatcher);
 
-    if(!d->m_watcher) {
+    if(!d->m_watcher || !d->m_watcher->isValid()) {
         return;
     }
 
     if(!d->m_watcher->isStopped()) {
         d->m_watcher->stop();
-        d->m_watcher.reset();
     }
 }

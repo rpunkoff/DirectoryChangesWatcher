@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <atomic>
+#include <mutex>
 
 #include "utils.h"
 
@@ -43,6 +44,7 @@ public:
      */
     bool isStopped() const;
 
+    bool isValid() const;
 
     /**
      * @brief start - check for watching for directory stopped or not and if it is stopped then this method sets the flag stopped into the "false" state
@@ -72,6 +74,7 @@ private:
     std::atomic_bool m_stopped {true};
     std::string m_directory;
     std::unique_ptr<DirectoryChangesWatcherPlatformData> m_data;
+    mutable std::mutex m_mutex;
 };
 }
 

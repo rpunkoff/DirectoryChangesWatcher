@@ -22,7 +22,7 @@ struct DirectoryChangesWatcherPlatformData {
     std::unordered_map<int, std::string> m_watchedDirectories;
 
     //TODO maybe move this struct to watcher.cpp
-    struct data {
+    struct data_t {
         int m_stopFds[2]{};
         int m_epollFd{};
         int m_inotifyFd{};
@@ -31,7 +31,7 @@ struct DirectoryChangesWatcherPlatformData {
         struct epoll_event m_events[MAX_EPOLL_EVENTS];
     };
 
-    data m_data;
+    data_t data;
 };
 
 static const uint32_t EventMask{IN_DELETE |

@@ -5,7 +5,6 @@
 namespace api {
 DirectoryChangesWatcher::DirectoryChangesWatcher(const std::string& directory) :
     m_directory(directory){
-    createData();
 }
 
 DirectoryChangesWatcher::~DirectoryChangesWatcher() noexcept {
